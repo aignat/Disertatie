@@ -11,11 +11,8 @@ public class NGramUtils {
     public static ArrayList<Integer> getIntersectionYears(TreeMap<Integer, Float> data1, TreeMap<Integer, Float> data2) {
         ArrayList<Integer> intersectionYears = new ArrayList<Integer>();
 
-        Set<Map.Entry<Integer, Float>> entrySet1 = data1.entrySet();
-        Set<Map.Entry<Integer, Float>> entrySet2 = data2.entrySet();
-
-        Iterator<Map.Entry<Integer, Float>> iterator1 = entrySet1.iterator();
-        Iterator<Map.Entry<Integer, Float>> iterator2 = entrySet2.iterator();
+        Iterator<Map.Entry<Integer, Float>> iterator1 = data1.entrySet().iterator();
+        Iterator<Map.Entry<Integer, Float>> iterator2 = data2.entrySet().iterator();
 
         float previousValue1 = iterator1.next().getValue();
         float previousValue2 = iterator2.next().getValue();
@@ -45,41 +42,25 @@ public class NGramUtils {
         int plateau = Constants.NGRAM_PEAK_PLATEAU;
         ArrayList<Integer> peakYearsList = new ArrayList<Integer>();
         ArrayList<Integer> years = new ArrayList<Integer>();
-        ArrayList<Float> frequences = new ArrayList<Float>();
+        ArrayList<Float> frequencies = new ArrayList<Float>();
 
-        Set<Map.Entry<Integer, Float>> entrySet = data.entrySet();
-        Iterator<Map.Entry<Integer, Float>> iterator = entrySet.iterator();
-
-        while (iterator.hasNext()) {
-            Map.Entry<Integer, Float> entry = iterator.next();
+        for (Map.Entry<Integer, Float> entry : data.entrySet()) {
             years.add(entry.getKey());
-            frequences.add(entry.getValue());
+            frequencies.add(entry.getValue());
         }
 
-        for (int i = 0; i < years.size(); i++) {
-            float value = frequences.get(i);
-            int left = i - plateau >= 0 ? i - plateau : 0;
-            int right = i + plateau < years.size() ? i + plateau : years.size() - 1;
-            boolean isPeak = true;
+        outerloop:
+        for (int i = plateau; i < years.size() - plateau; i++) {
+            float value = frequencies.get(i);
 
-            for (int j = left; j < i; j++) {
-                if (frequences.get(j) > value) {
-                    isPeak = false;
-                    break;
+            for (int j = 1; j < plateau; j++) {
+                if (frequencies.get(i - j) > value || frequencies.get(i + j) > value) {
+                    continue outerloop;
                 }
             }
 
-            for (int j = i + 1; j < right; j++) {
-                if (frequences.get(j) > value) {
-                    isPeak = false;
-                    break;
-                }
-            }
-
-            if (isPeak) {
-                peakYearsList.add(years.get(i));
-                i++;
-            }
+            peakYearsList.add(years.get(i));
+            i+= plateau - 1;
         }
 
         return peakYearsList;
@@ -105,10 +86,10 @@ public class NGramUtils {
                 String word = line.split(":")[0];
 
                 try {
-                    TreeMap<Integer, Float> data = nGramReader.readCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, word, false);
+                    TreeMap<Integer, Float> data = nGramReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, word, false);
                     for (int i : NGramUtils.getPeakYears(data)) {
                         String newWord = words.get(i - Constants.NGRAM_STARTING_YEAR) + word + ",";
-                        words.set(i - Constants.NGRAM_STARTING_YEAR, newWord);StringBuffer s;
+                        words.set(i - Constants.NGRAM_STARTING_YEAR, newWord);
                     }
                 } catch (WordNotFoundException e) {
                 }
