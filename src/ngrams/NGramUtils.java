@@ -1,5 +1,6 @@
 package ngrams;
 
+import exception.WordNotFoundException;
 import utils.Constants;
 
 import java.io.*;
@@ -83,7 +84,7 @@ public class NGramUtils {
         return peakYearsList;
     }
 
-    public static void getPeakYearsForAllWordNetWords() {
+    public static void writePeaksForAllWordNetWordsToFile() {
 
         List<Integer> years = new ArrayList<Integer>();
         List<String> words = new ArrayList<String>();
@@ -98,21 +99,23 @@ public class NGramUtils {
         NGramCSVReader nGramReader = new NGramCSVReader();
 
         try {
-            br = new BufferedReader(new FileReader(Constants.WORDNET_WORDS_FILE));
+            br = new BufferedReader(new FileReader(Constants.WORDNET_WORDS_SYNONYMS_FILE));
             while ((line = br.readLine()) != null) {
                 String word = line.split(":")[0];
-                System.out.println(word);
-                TreeMap<Integer, Float> data = nGramReader.readCSV("English", word, false);
-                ArrayList<Integer> peakYears = NGramUtils.getPeakYears(data, 10);
-                for (int i : peakYears) {
-                    String newWord = words.get(i - Constants.STARTING_YEAR) + word + ",";
-                    words.set(i - Constants.STARTING_YEAR, newWord);
+
+                try {
+                    TreeMap<Integer, Float> data = nGramReader.readCSV("English", word, false);
+                    for (int i : NGramUtils.getPeakYears(data, 10)) {
+                        String newWord = words.get(i - Constants.STARTING_YEAR) + word + ",";
+                        words.set(i - Constants.STARTING_YEAR, newWord);
+                    }
+                } catch (WordNotFoundException e) {
                 }
             }
         } catch (FileNotFoundException e) {
-            System.out.println("Can't find Wordnet synonyms input file");
+            System.out.println("Can't find WordNet synonyms input file");
         } catch (IOException ex) {
-            System.out.println("Error reading wordnet file");
+            System.out.println("Error reading WordNet file");
         } finally {
             if (br != null) {
                 try {
@@ -128,9 +131,18 @@ public class NGramUtils {
             bw = new BufferedWriter(new FileWriter(Constants.WORDNET_WORDS_PEAKYEARS_FILE));
             for (int i = 0; i < years.size(); i++) {
                 bw.write(years.get(i) + ":" + words.get(i));
+                bw.newLine();
             }
         } catch (IOException ex) {
-            System.out.println("Error writting to peak years file");
+            System.out.println("Error writing to peak years file");
+        } finally {
+            if (bw != null) {
+                try {
+                    bw.close();
+                } catch (IOException e) {
+                    System.out.println("Error closing peaks file");
+                }
+            }
         }
 
     }

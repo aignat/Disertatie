@@ -41,7 +41,7 @@ public class WordNet {
         Synset[] synSets = null;
         try {
             synSets = inputIndexWord.getSenses();
-        } catch (JWNLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return synonimsSet;
         }
@@ -57,13 +57,12 @@ public class WordNet {
     }
 
     
-    public static void writeAllWordsWithSynonymsToFile(String fileName) {
+    public static void writeAllWordsWithSynonymsToFile() {
 
-        File file = new File(fileName);
         BufferedWriter output = null;
 
         try {
-            output = new BufferedWriter(new FileWriter(file));
+            output = new BufferedWriter(new FileWriter(Constants.WORDNET_WORDS_SYNONYMS_FILE));
 
             for (Object pos : POS.getAllPOS()) {
                 try {

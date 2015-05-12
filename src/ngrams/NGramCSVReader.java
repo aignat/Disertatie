@@ -1,11 +1,13 @@
 package ngrams;
 
+import exception.WordNotFoundException;
 import utils.Constants;
 
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 
 /**
  *
@@ -32,8 +34,10 @@ public class NGramCSVReader {
                 yearToBookTotalCounts.put(Integer.parseInt(tokens[0]), Long.parseLong(tokens[1]));
             }
         } catch (FileNotFoundException e) {
+            System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
             System.out.println("Error reading CSV file, FileNotFoundException.");
         } catch (IOException e) {
+            System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
             System.out.println("Error reading CSV file, IOException.");
         } finally {
             if (br != null) {
@@ -66,11 +70,11 @@ public class NGramCSVReader {
     }
 
     public static String getCSVFilePathAndName(String corpus, String word) {
-        return Constants.CORPUS_PATH + corpus + "\\" + Constants.ENGLISH_1GRAM_CSV_PREFIX + word.substring(0, 1).toLowerCase();
+        return Constants.CORPUS_PATH + File.separator + corpus + File.separator + Constants.ENGLISH_1GRAM_CSV_PREFIX + word.substring(0, 1).toLowerCase();
     }
 
-    public static TreeMap<Integer, Float> readCSV(String corpus, String word, boolean writeToFile) {
-        //String csvFileToRead = "C:\\GoogleNgrams\\1grams\\googlebooks-eng-us-all-1gram-20120701-a";
+    public static TreeMap<Integer, Float> readCSV(String corpus, String word, boolean writeToFile) throws WordNotFoundException {
+
         String csvFileToRead = getCSVFilePathAndName(corpus, word);
         BufferedReader br = null;
         PrintWriter pw = null;
@@ -108,8 +112,10 @@ public class NGramCSVReader {
                 }
             }
         } catch (FileNotFoundException e) {
+            System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
             System.out.println("Error reading CSV file, FileNotFoundException.");
         } catch (IOException e) {
+            System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
             System.out.println("Error reading CSV file, IOException.");
         } finally {
             if (br != null) {
@@ -118,6 +124,10 @@ public class NGramCSVReader {
                 } catch (IOException e) {
                 }
             }
+        }
+
+        if (!alreadyRead) {
+            throw new WordNotFoundException();
         }
 
         yearToFrequency = smoothData(yearToFrequency, Constants.SMOOTHING);
@@ -129,6 +139,7 @@ public class NGramCSVReader {
                     pw.println(yearFrequencyEntry.getKey() + " " + yearFrequencyEntry.getValue());
                 }
             } catch (IOException e) {
+                System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
                 System.out.println("Error writing to file, IOException.");
             } finally {
                 if (pw != null) {
@@ -138,7 +149,7 @@ public class NGramCSVReader {
         }
 
         System.out.println("Done with reading CSV");
-        
+
         return yearToFrequency;
     }
 
@@ -149,7 +160,7 @@ public class NGramCSVReader {
         String line;
 
         try {
-            br = new BufferedReader(new FileReader(Constants.WORDNET_WORDS_FILE));
+            br = new BufferedReader(new FileReader(Constants.WORDNET_WORDS_SYNONYMS_FILE));
             while ((line = br.readLine()) != null) {
                 String synonyms = line.split(":")[1];
                 if (synonyms != null) {
@@ -159,8 +170,10 @@ public class NGramCSVReader {
                 }
             }
         } catch (FileNotFoundException e) {
+            System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
             System.out.println("Can't find Wordnet synonyms input file");
         } catch (IOException ex) {
+            System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
             System.out.println("Error reading wordnet file");
         } finally {
             if (br != null) {
@@ -220,8 +233,10 @@ public class NGramCSVReader {
                         }
                     }
                 } catch (FileNotFoundException e) {
+                    System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
                     System.out.println("Error reading CSV file, FileNotFoundException.");
                 } catch (IOException e) {
+                    System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
                     System.out.println("Error reading CSV file, IOException.");
                 } finally {
                     if (br != null) {
@@ -240,6 +255,7 @@ public class NGramCSVReader {
             }
         } catch (FileNotFoundException ex) {
             Logger.getLogger(NGramCSVReader.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
         } finally {
             if (pw != null) {
                 pw.close();
