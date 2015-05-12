@@ -40,8 +40,9 @@ public class NGramUtils {
         return intersectionYears;
     }
 
-    public static ArrayList<Integer> getPeakYears(TreeMap<Integer, Float> data, int plateau) {
+    public static ArrayList<Integer> getPeakYears(TreeMap<Integer, Float> data) {
 
+        int plateau = Constants.NGRAM_PEAK_PLATEAU;
         ArrayList<Integer> peakYearsList = new ArrayList<Integer>();
         ArrayList<Integer> years = new ArrayList<Integer>();
         ArrayList<Float> frequences = new ArrayList<Float>();
@@ -89,7 +90,7 @@ public class NGramUtils {
         List<Integer> years = new ArrayList<Integer>();
         List<String> words = new ArrayList<String>();
 
-        for (int i = Constants.STARTING_YEAR; i <= Constants.END_YEAR; i++) {
+        for (int i = Constants.NGRAM_STARTING_YEAR; i <= Constants.NGRAM_END_YEAR; i++) {
             years.add(i);
             words.add("");
         }
@@ -104,10 +105,10 @@ public class NGramUtils {
                 String word = line.split(":")[0];
 
                 try {
-                    TreeMap<Integer, Float> data = nGramReader.readCSV("English", word, false);
-                    for (int i : NGramUtils.getPeakYears(data, 10)) {
-                        String newWord = words.get(i - Constants.STARTING_YEAR) + word + ",";
-                        words.set(i - Constants.STARTING_YEAR, newWord);
+                    TreeMap<Integer, Float> data = nGramReader.readCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, word, false);
+                    for (int i : NGramUtils.getPeakYears(data)) {
+                        String newWord = words.get(i - Constants.NGRAM_STARTING_YEAR) + word + ",";
+                        words.set(i - Constants.NGRAM_STARTING_YEAR, newWord);StringBuffer s;
                     }
                 } catch (WordNotFoundException e) {
                 }

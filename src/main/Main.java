@@ -45,14 +45,14 @@ public class Main {
 
         try {
             NGramCSVReader nGramCSVReader = new NGramCSVReader();
-            TreeMap<Integer, Float> data1 = nGramCSVReader.readCSV("English", "house", false);
-            TreeMap<Integer, Float> data2 = nGramCSVReader.readCSV("English", "home", false);
+            TreeMap<Integer, Float> data1 = nGramCSVReader.readCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, "house", false);
+            TreeMap<Integer, Float> data2 = nGramCSVReader.readCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, "home", false);
             System.out.println("=========");
-            for (int i : NGramUtils.getPeakYears(data1, 10)) {
+            for (int i : NGramUtils.getPeakYears(data1)) {
                 System.out.println(i);
             }
             System.out.println("=========");
-            for (int i : NGramUtils.getPeakYears(data2, 10)) {
+            for (int i : NGramUtils.getPeakYears(data2)) {
                 System.out.println(i);
             }
 

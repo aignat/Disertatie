@@ -28,7 +28,7 @@ public class NGramCSVReader {
         String splitBy = ",";
 
         try {
-            br = new BufferedReader(new FileReader(Constants.TOTAL_COUNTS_FILENAME));
+            br = new BufferedReader(new FileReader(Constants.NGRAM_ENGLISH_TOTALCOUNTS_FILE));
             while ((line = br.readLine()) != null) {
                 String[] tokens = line.split(splitBy);
                 yearToBookTotalCounts.put(Integer.parseInt(tokens[0]), Long.parseLong(tokens[1]));
@@ -70,7 +70,7 @@ public class NGramCSVReader {
     }
 
     public static String getCSVFilePathAndName(String corpus, String word) {
-        return Constants.CORPUS_PATH + File.separator + corpus + File.separator + Constants.ENGLISH_1GRAM_CSV_PREFIX + word.substring(0, 1).toLowerCase();
+        return Constants.NGRAM_CORPUS_PATH + File.separator + corpus + File.separator + Constants.NGRAM_ENGLISH_CSV_PREFIX + word.substring(0, 1).toLowerCase();
     }
 
     public static TreeMap<Integer, Float> readCSV(String corpus, String word, boolean writeToFile) throws WordNotFoundException {
@@ -81,8 +81,8 @@ public class NGramCSVReader {
         String line;
         String splitBy = "\t";
         boolean alreadyRead = false;
-        int startYear = Constants.STARTING_YEAR;
-        int endYear = Constants.END_YEAR;
+        int startYear = Constants.NGRAM_STARTING_YEAR;
+        int endYear = Constants.NGRAM_END_YEAR;
         TreeMap<Integer, Float> yearToFrequency = new TreeMap<Integer, Float>();
 
         for (int i = startYear; i <= endYear; i++) {
@@ -98,10 +98,10 @@ public class NGramCSVReader {
                         alreadyRead = true;
                     }
                     int key = Integer.parseInt(tokens[1]);
-                    if (key < Constants.STARTING_YEAR) {
+                    if (key < Constants.NGRAM_STARTING_YEAR) {
                         continue;
                     }
-                    if (key > Constants.END_YEAR) {
+                    if (key > Constants.NGRAM_END_YEAR) {
                         break;
                     }
                     yearToFrequency.put(key, Float.parseFloat(tokens[2]) / yearToBookTotalCounts.get(key));
@@ -130,7 +130,7 @@ public class NGramCSVReader {
             throw new WordNotFoundException();
         }
 
-        yearToFrequency = smoothData(yearToFrequency, Constants.SMOOTHING);
+        yearToFrequency = smoothData(yearToFrequency, Constants.NGRAM_SMOOTHING);
 
         if (writeToFile) {
             try {
@@ -196,12 +196,12 @@ public class NGramCSVReader {
         String line;
         String splitBy = "\t";
         boolean alreadyRead;
-        int startYear = Constants.STARTING_YEAR;
-        int endYear = Constants.END_YEAR;
+        int startYear = Constants.NGRAM_STARTING_YEAR;
+        int endYear = Constants.NGRAM_END_YEAR;
         TreeMap<Integer, Float> yearToFrequency = new TreeMap<Integer, Float>();
 
         try {
-            pw = new PrintWriter(Constants.NGRAM_DATA_FOR_ALL_WORDS);
+            pw = new PrintWriter(Constants.NGRAM_ENGLISH_DATA_FOR_WORDNET);
 
             HashSet<String> allWords = getAllWordsFromWordnetSynonymsFile();
             //for each word read data from csv
