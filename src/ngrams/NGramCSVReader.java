@@ -1,12 +1,12 @@
 package ngrams;
 
-import exception.WordNotFoundException;
+import exception.CustomException;
 import utils.Constants;
 
 import java.io.*;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 
 
 /**
@@ -15,7 +15,7 @@ import java.util.logging.Logger;
  */
 public class NGramCSVReader {
 
-    public static HashMap<Integer, Long> readTotalCounts() {
+    public static HashMap<Integer, Long> readTotalCounts() throws CustomException {
 
         HashMap<Integer, Long> yearToBookTotalCounts = new HashMap<Integer, Long>();
         BufferedReader br = null;
@@ -28,16 +28,15 @@ public class NGramCSVReader {
                 yearToBookTotalCounts.put(Integer.parseInt(tokens[0]), Long.parseLong(tokens[1]));
             }
         } catch (FileNotFoundException e) {
-            System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
-            System.out.println("Error reading CSV file, FileNotFoundException.");
+            throw new CustomException("Constants.NGRAM_ENGLISH_TOTALCOUNTS_FILE not found", Thread.currentThread().getStackTrace()[1].getMethodName());
         } catch (IOException e) {
-            System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
-            System.out.println("Error reading CSV file, IOException.");
+            throw new CustomException("Error reading from CSV file", Thread.currentThread().getStackTrace()[1].getMethodName());
         } finally {
             if (br != null) {
                 try {
                     br.close();
                 } catch (IOException e) {
+                    throw new CustomException("Error closing Constants.NGRAM_ENGLISH_TOTALCOUNTS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
                 }
             }
         }
@@ -64,7 +63,7 @@ public class NGramCSVReader {
         return smoothData;
     }
 
-    public static TreeMap<Integer, Float> readWordFromCSV(String corpus, String word, boolean writeToFile) throws WordNotFoundException {
+    public static TreeMap<Integer, Float> readWordFromCSV(String corpus, String word, boolean writeToFile) throws CustomException {
 
         String csvFileToRead = Constants.NGRAM_CORPUS_PATH + File.separator + corpus + File.separator
                              + Constants.NGRAM_ENGLISH_CSV_PREFIX + word.substring(0, 1).toLowerCase();
@@ -75,10 +74,7 @@ public class NGramCSVReader {
         TreeMap<Integer, Float> yearToFrequency = new TreeMap<Integer, Float>();
         HashMap<Integer, Long> yearToBookTotalCounts = readTotalCounts();
 
-        //TODO: is this still needed?
-        int startYear = Constants.NGRAM_STARTING_YEAR;
-        int endYear = Constants.NGRAM_END_YEAR;
-        for (int i = startYear; i <= endYear; i++) {
+        for (int i = Constants.NGRAM_STARTING_YEAR; i <= Constants.NGRAM_END_YEAR; i++) {
             yearToFrequency.put(i, 0.0F);
         }
 
@@ -104,25 +100,22 @@ public class NGramCSVReader {
                 yearToFrequency.put(year, Float.parseFloat(tokens[2]) / yearToBookTotalCounts.get(year));
                 alreadyRead = true;
             }
-            //TODO: do we need separate catch blocks? Is the logic different? Need to throw the Exception up
         } catch (FileNotFoundException e) {
-            System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
-            System.out.println("Error reading CSV file, FileNotFoundException.");
+            throw new CustomException("CSV file not found", Thread.currentThread().getStackTrace()[1].getMethodName());
         } catch (IOException e) {
-            System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
-            System.out.println("Error reading CSV file, IOException.");
+            throw new CustomException("Error reading CSV file", Thread.currentThread().getStackTrace()[1].getMethodName());
         } finally {
             if (br != null) {
                 try {
                     br.close();
                 } catch (IOException e) {
-                    //TODO: ?
+                    throw new CustomException("Error closing CSV file", Thread.currentThread().getStackTrace()[1].getMethodName());
                 }
             }
         }
 
         if (!alreadyRead) {
-            throw new WordNotFoundException();
+            throw new CustomException(word + " doesn't exist in the CSV files", Thread.currentThread().getStackTrace()[1].getMethodName());
         }
 
         yearToFrequency = smoothData(yearToFrequency, Constants.NGRAM_SMOOTHING);
@@ -134,8 +127,7 @@ public class NGramCSVReader {
                     pw.println(yearFrequencyEntry.getKey() + " " + yearFrequencyEntry.getValue());
                 }
             } catch (IOException e) {
-                System.out.println("In method " + Thread.currentThread().getStackTrace()[1].getMethodName());
-                System.out.println("Error writing to file, IOException.");
+                throw new CustomException("Error writing to file", Thread.currentThread().getStackTrace()[1].getMethodName());
             } finally {
                 if (pw != null) {
                     pw.close();

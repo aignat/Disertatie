@@ -1,6 +1,6 @@
 package ngrams;
 
-import exception.WordNotFoundException;
+import exception.CustomException;
 import utils.Constants;
 
 import java.io.*;
@@ -66,7 +66,7 @@ public class NGramUtils {
         return peakYearsList;
     }
 
-    public static void writePeaksForAllWordNetWordsToFile() {
+    public static void writePeaksForAllWordNetWordsToFile() throws CustomException {
 
         List<Integer> years = new ArrayList<Integer>();
         List<String> words = new ArrayList<String>();
@@ -83,27 +83,25 @@ public class NGramUtils {
         try {
             br = new BufferedReader(new FileReader(Constants.WORDNET_WORDS_SYNONYMS_FILE));
             while ((line = br.readLine()) != null) {
-                String word = line.split(":")[0];
 
-                try {
-                    TreeMap<Integer, Float> data = nGramReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, word, false);
-                    for (int i : NGramUtils.getPeakYears(data)) {
-                        String newWord = words.get(i - Constants.NGRAM_STARTING_YEAR) + word + ",";
-                        words.set(i - Constants.NGRAM_STARTING_YEAR, newWord);
-                    }
-                } catch (WordNotFoundException e) {
+                String word = line.split(":")[0];
+                TreeMap<Integer, Float> data = nGramReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, word, false);
+
+                for (int i : NGramUtils.getPeakYears(data)) {
+                    String newWord = words.get(i - Constants.NGRAM_STARTING_YEAR) + word + ",";
+                    words.set(i - Constants.NGRAM_STARTING_YEAR, newWord);
                 }
             }
         } catch (FileNotFoundException e) {
-            System.out.println("Can't find WordNet synonyms input file");
+            throw new CustomException("Constants.WORDNET_WORDS_SYNONYMS_FILE not found", Thread.currentThread().getStackTrace()[1].getMethodName());
         } catch (IOException ex) {
-            System.out.println("Error reading WordNet file");
+            throw new CustomException("Error reading Constants.WORDNET_WORDS_SYNONYMS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
         } finally {
             if (br != null) {
                 try {
                     br.close();
                 } catch (IOException ex) {
-                    System.out.println("Can't close file");
+                    throw new CustomException("Error closing Constants.WORDNET_WORDS_SYNONYMS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
                 }
             }
         }
@@ -116,13 +114,13 @@ public class NGramUtils {
                 bw.newLine();
             }
         } catch (IOException ex) {
-            System.out.println("Error writing to peak years file");
+            throw new CustomException("Error writing to Constants.WORDNET_WORDS_PEAKYEARS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
         } finally {
             if (bw != null) {
                 try {
                     bw.close();
                 } catch (IOException e) {
-                    System.out.println("Error closing peaks file");
+                    throw new CustomException("Error closing to Constants.WORDNET_WORDS_PEAKYEARS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
                 }
             }
         }
