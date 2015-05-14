@@ -85,11 +85,15 @@ public class NGramUtils {
             while ((line = br.readLine()) != null) {
 
                 String word = line.split(":")[0];
-                TreeMap<Integer, Float> data = nGramReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, word, false);
+                try {
+                    TreeMap<Integer, Float> data = nGramReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, word, false);
 
-                for (int i : NGramUtils.getPeakYears(data)) {
-                    String newWord = words.get(i - Constants.NGRAM_STARTING_YEAR) + word + ",";
-                    words.set(i - Constants.NGRAM_STARTING_YEAR, newWord);
+                    for (int i : NGramUtils.getPeakYears(data)) {
+                        String newWord = words.get(i - Constants.NGRAM_STARTING_YEAR) + word + ",";
+                        words.set(i - Constants.NGRAM_STARTING_YEAR, newWord);
+                    }
+                } catch(CustomException e) {
+                    //do nothing, no peaks for the word
                 }
             }
         } catch (FileNotFoundException e) {

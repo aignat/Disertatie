@@ -6,47 +6,18 @@ import ngrams.NGramUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.Constants;
-import wordnet.WordNet;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.TreeMap;
 
 /**
- *
- * @author aignat
+ * Created by aignat on 5/14/2015.
  */
-public class Main {
+public class IntersectionsFinder {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(IntersectionsFinder.class);
 
     public static void main(String[] args) {
-
-        //if not already done, write all the WordNet words and their synonyms to Constants.WORDNET_WORDS_SYNONYMS_FILE
-        if (!new File(Constants.WORDNET_WORDS_SYNONYMS_FILE).isFile()) {
-            //initialize WordNet
-            try {
-                WordNet.initializeWordNet();
-            } catch (CustomException e) {
-                LOGGER.error(e.getMessage() + ":" + e.getOriginatingMethodName());
-                return;
-            }
-
-            try {
-                WordNet.writeAllWordsWithSynonymsToFile();
-            } catch (CustomException e) {
-                LOGGER.error(e.getMessage() + ":" + e.getOriginatingMethodName());
-            }
-        }
-        
-        //if not already done, write peak years for all WordNet words to Constants.WORDNET_WORDS_PEAKYEARS_FILE
-        if (!new File(Constants.WORDNET_WORDS_PEAKYEARS_FILE).isFile()) {
-            try {
-                NGramUtils.writePeaksForAllWordNetWordsToFile();
-            } catch (CustomException e) {
-                LOGGER.error(e.getMessage() + ":" + e.getOriginatingMethodName());
-            }
-        }
 
         try {
             TreeMap<Integer, Float> data1 = NGramCSVReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, "house", false);
@@ -74,7 +45,7 @@ public class Main {
         }
 
 //        nGramReader.readAllWordsFromCSVToFile("English");
-        
-    }
-}
 
+    }
+
+}

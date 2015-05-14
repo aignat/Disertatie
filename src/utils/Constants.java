@@ -23,5 +23,4 @@ public class Constants {
     public static final String NGRAM_ENGLISH_CSV_PREFIX = "googlebooks-eng-all-1gram-20120701-";
     public static final String NGRAM_ENGLISH_TOTALCOUNTS_FILE = "resources" + File.separator + "GoogleNgrams" + File.separator + "googlebooks-eng-all-totalcounts-20120701.txt";
     public static final String NGRAM_ENGLISH_CORPUS_NAME = "English";
-
 }
