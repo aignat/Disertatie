@@ -1,12 +1,16 @@
 package ngrams;
 
 import exception.CustomException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.Constants;
 
 import java.io.*;
 import java.util.*;
 
 public class NGramUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NGramUtils.class);
 
     public static ArrayList<Integer> getIntersectionYears(TreeMap<Integer, Float> data1, TreeMap<Integer, Float> data2) {
         ArrayList<Integer> intersectionYears = new ArrayList<Integer>();
@@ -85,6 +89,8 @@ public class NGramUtils {
             while ((line = br.readLine()) != null) {
 
                 String word = line.split(":")[0];
+                LOGGER.info(word);
+
                 try {
                     TreeMap<Integer, Float> data = nGramReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, word, false);
 
