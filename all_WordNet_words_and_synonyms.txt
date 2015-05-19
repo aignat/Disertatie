@@ -1,8 +1,0 @@
-hyssopus:genus Hyssopus,Hyssopus,
-hyssopus officinalis:Hyssopus officinalis,hyssop,
-hysterectomy:hysterectomy,
-
-
-
-
-
