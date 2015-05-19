@@ -17,7 +17,7 @@ public class Constants {
     public static final int NGRAM_SMOOTHING = 2;
     public static final int NGRAM_STARTING_YEAR = 1800;
     public static final int NGRAM_END_YEAR = 2008;
-    public static final int NGRAM_PEAK_PLATEAU = 10;
+    public static final int NGRAM_PEAK_RANGE = 10;
     public static final String NGRAM_CORPUS_PATH = "resources" + File.separator + "GoogleNgrams";
     public static final String NGRAM_ENGLISH_DATA_FOR_WORDNET = "resources" + File.separator + "englishNgramData.txt";
     public static final String NGRAM_ENGLISH_CSV_PREFIX = "googlebooks-eng-all-1gram-20120701-";

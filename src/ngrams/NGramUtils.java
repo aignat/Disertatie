@@ -43,7 +43,7 @@ public class NGramUtils {
 
     public static ArrayList<Integer> getPeakYears(TreeMap<Integer, Float> data) {
 
-        int plateau = Constants.NGRAM_PEAK_PLATEAU;
+        int peakRange = Constants.NGRAM_PEAK_RANGE;
         ArrayList<Integer> peakYearsList = new ArrayList<Integer>();
         ArrayList<Integer> years = new ArrayList<Integer>();
         ArrayList<Float> frequencies = new ArrayList<Float>();
@@ -54,17 +54,50 @@ public class NGramUtils {
         }
 
         outerloop:
-        for (int i = plateau; i < years.size() - plateau; i++) {
+        for (int i = peakRange; i < years.size() - peakRange; i++) {
             float value = frequencies.get(i);
 
-            for (int j = 1; j < plateau; j++) {
+            for (int j = 1; j < peakRange; j++) {
                 if (frequencies.get(i - j) > value || frequencies.get(i + j) > value) {
                     continue outerloop;
                 }
             }
 
             peakYearsList.add(years.get(i));
-            i+= plateau - 1;
+            i+= peakRange - 1;
+        }
+
+        return peakYearsList;
+    }
+
+    public static ArrayList<Integer> getPeakYears2(TreeMap<Integer, Float> data) {
+
+        ArrayList<Integer> peakYearsList = new ArrayList<Integer>();
+        ArrayList<Integer> years = new ArrayList<Integer>();
+        ArrayList<Float> frequencies = new ArrayList<Float>();
+
+        int peakRange = 10;
+        float beforeInclination = 90.0F / 100;
+        float afterInclination = 90.0F / 100;
+
+        for (Map.Entry<Integer, Float> entry : data.entrySet()) {
+            years.add(entry.getKey());
+            frequencies.add(entry.getValue());
+        }
+
+        for (int i = peakRange; i < years.size() - peakRange; i++) {
+            float value = frequencies.get(i);
+
+            //if this is a peak
+            if ((value > frequencies.get(i - 1)) && (value > frequencies.get(i + 1))) {
+                //if the frequencies of i-10 and i+10 are lower than 90% of current frequency
+                if ((beforeInclination * value > frequencies.get(i - peakRange)) && (afterInclination * value > frequencies.get(i + peakRange))) {
+                    //if the frequencies of i-5 and i+5 are lower than 90% of current frequency
+                    if ((beforeInclination * value > frequencies.get(i - peakRange / 2)) && (afterInclination * value > frequencies.get(i + peakRange / 2))) {
+                        peakYearsList.add(years.get(i));
+                    }
+                }
+            }
         }
 
         return peakYearsList;
@@ -94,7 +127,7 @@ public class NGramUtils {
                 try {
                     TreeMap<Integer, Float> data = nGramReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, word, false);
 
-                    for (int i : NGramUtils.getPeakYears(data)) {
+                    for (int i : NGramUtils.getPeakYears2(data)) {
                         String newWord = words.get(i - Constants.NGRAM_STARTING_YEAR) + word + ",";
                         words.set(i - Constants.NGRAM_STARTING_YEAR, newWord);
                     }
