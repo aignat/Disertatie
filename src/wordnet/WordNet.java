@@ -8,6 +8,8 @@ import net.didion.jwnl.data.POS;
 import net.didion.jwnl.data.Synset;
 import net.didion.jwnl.data.Word;
 import net.didion.jwnl.dictionary.Dictionary;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.Constants;
 
 import java.io.*;
@@ -19,6 +21,8 @@ import java.util.Iterator;
  * @author aignat
  */
 public class WordNet {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(WordNet.class);
 
     /**
      * initialize WordNet
@@ -73,6 +77,7 @@ public class WordNet {
                     while (iterator.hasNext()) {
                         IndexWord indexWord = (IndexWord) iterator.next();
 
+                        LOGGER.info(indexWord.getLemma());
                         output.write(indexWord.getLemma() + ":");
 
                         try {

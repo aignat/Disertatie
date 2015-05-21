@@ -13,6 +13,7 @@ public class Constants {
     public static final String WORDNET_WORDS_FILE = "all_WordNet_words.txt";
     public static final String WORDNET_WORDS_SYNONYMS_FILE = "all_WordNet_words_and_synonyms.txt";
     public static final String WORDNET_WORDS_PEAKYEARS_FILE = "all_WordNet_peaks.txt";
+    public static final String WORDNET_WORDS_INTERSECTIONS = "all_WordNet_intersections.txt";
 
     public static final int NGRAM_SMOOTHING = 2;
     public static final int NGRAM_STARTING_YEAR = 1800;

@@ -41,6 +41,55 @@ public class NGramUtils {
         return intersectionYears;
     }
 
+    public static void writeIntersectionForAllWordsToFile() throws CustomException {
+
+        String line;
+        BufferedReader br = null;
+        BufferedWriter bw = null;
+
+        try {
+            br = new BufferedReader(new FileReader(Constants.WORDNET_WORDS_SYNONYMS_FILE));
+            bw = new BufferedWriter(new FileWriter(Constants.WORDNET_WORDS_INTERSECTIONS));
+
+            while ((line = br.readLine()) != null) {
+
+                String[] synonyms = line.split(":");
+                LOGGER.info(synonyms[0]);
+                TreeMap<Integer, Float> wordData = NGramCSVReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, synonyms[0], false);
+
+                for (int i = 1; i < synonyms.length; i++) {
+                    TreeMap<Integer, Float> synonymData = NGramCSVReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, synonyms[i], false);
+                    ArrayList<Integer> intersections = getIntersectionYears(wordData, synonymData);
+
+                    bw.write(synonyms[0] + " " + synonyms[i]);
+                    for (int intersection : intersections) {
+                        bw.write(intersection);
+                    }
+                    bw.newLine();
+                }
+            }
+        } catch (FileNotFoundException e) {
+            throw new CustomException("Constants.WORDNET_WORDS_SYNONYMS_FILE not found", Thread.currentThread().getStackTrace()[1].getMethodName());
+        } catch (IOException e) {
+            throw new CustomException("Error reading Constants.WORDNET_WORDS_SYNONYMS_FILE or writing to Constants.WORDNET_WORDS_INTERSECTIONS", Thread.currentThread().getStackTrace()[1].getMethodName());
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException ex) {
+                    throw new CustomException("Error closing Constants.WORDNET_WORDS_SYNONYMS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
+                }
+            }
+            if (bw != null) {
+                try {
+                    bw.close();
+                } catch (IOException ex) {
+                    throw new CustomException("Error closing Constants.WORDNET_WORDS_INTERSECTIONS", Thread.currentThread().getStackTrace()[1].getMethodName());
+                }
+            }
+        }
+    }
+
     public static ArrayList<Integer> getPeakYears(TreeMap<Integer, Float> data) {
 
         int peakRange = Constants.NGRAM_PEAK_RANGE;
@@ -107,15 +156,13 @@ public class NGramUtils {
 
         List<Integer> years = new ArrayList<Integer>();
         List<String> words = new ArrayList<String>();
+        BufferedReader br = null;
+        String line;
 
         for (int i = Constants.NGRAM_STARTING_YEAR; i <= Constants.NGRAM_END_YEAR; i++) {
             years.add(i);
             words.add("");
         }
-
-        BufferedReader br = null;
-        String line;
-        NGramCSVReader nGramReader = new NGramCSVReader();
 
         try {
             br = new BufferedReader(new FileReader(Constants.WORDNET_WORDS_SYNONYMS_FILE));
@@ -125,7 +172,7 @@ public class NGramUtils {
                 LOGGER.info(word);
 
                 try {
-                    TreeMap<Integer, Float> data = nGramReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, word, false);
+                    TreeMap<Integer, Float> data = NGramCSVReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, word, false);
 
                     for (int i : NGramUtils.getPeakYears2(data)) {
                         String newWord = words.get(i - Constants.NGRAM_STARTING_YEAR) + word + ",";

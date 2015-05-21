@@ -28,6 +28,8 @@ public class SynonymsFinder {
         } catch (CustomException e) {
             LOGGER.error(e.getMessage() + ":" + e.getOriginatingMethodName());
         }
+
+        System.out.println("Done finding synonyms");
     }
 }
 

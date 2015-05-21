@@ -20,5 +20,7 @@ public class PeaksFinder {
         } catch (CustomException e) {
             LOGGER.error(e.getMessage() + ":" + e.getOriginatingMethodName());
         }
+
+        System.out.println("Done finding peaks");
     }
 }
