@@ -3,6 +3,8 @@ package ngrams;
 import com.mongodb.*;
 
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -10,42 +12,70 @@ import java.util.List;
  */
 public class MongoDBService {
 
-    public DBCollection getCollection(String collectionName) {
+    private DB db;
 
-        DBCollection collection = null;
-
-        try {
-            MongoClient mongo = new MongoClient( "localhost" , 27017 );
-            DB db = mongo.getDB("test");
-            collection = db.getCollection(collectionName);
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-
-        return collection;
+    public MongoDBService(MongoClient mongoClient, String database) {
+        db = mongoClient.getDB(database);
     }
 
     public List<DBObject> getAllNGrams() {
 
-        DBCollection collection = getCollection("all_ngrams");
+        DBCollection collection = db.getCollection("all_ngrams");
 
         return collection.find().toArray();
     }
 
     public List<DBObject> getNGram(String ngram) {
 
-        DBCollection collection = getCollection("e_1ngram");
-
+        DBCollection collection = db.getCollection("e_1ngram");
         BasicDBObject searchQuery = new BasicDBObject();
         searchQuery.put("ngram", ngram);
 
         return collection.find(searchQuery).sort(new BasicDBObject("year", 1)).toArray();
-
-        //        while (cursor.hasNext()) {
-//            System.out.println(cursor.next());
-//        }
     }
 
+    public HashMap<Integer, Long> getTotalCounts() {
 
+        HashMap<Integer, Long> totalCountMap = new HashMap<Integer, Long>();
+
+        DBCollection collection = db.getCollection("total_counts");
+        DBCursor cursor = collection.find();
+
+        while (cursor.hasNext()) {
+            DBObject object = cursor.next();
+            totalCountMap.put((Integer) object.get("year"), ((Number) (object.get("match_count"))).longValue());
+        }
+
+        return totalCountMap;
+    }
+
+    public void filterData() {
+        String regex = "";
+
+        DBCollection ngramsCollection = db.getCollection("total_counts");
+    }
+
+    public void normalizeData() {
+
+        DBCollection ngramsCollection = db.getCollection("total_counts");
+        HashMap<Integer, Long> totalCountsMap = getTotalCounts();
+
+        DBObject query = new BasicDBObject();
+        DBObject update = new BasicDBObject();
+        update.put("$mul", new BasicDBObject("match_count", 1.0F/2));
+
+        ngramsCollection.update(query, update, false, true);
+    }
+
+    public void logarithmizeData() {
+
+        DBCollection ngramsCollection = db.getCollection("total_counts");
+
+        DBObject query = new BasicDBObject();
+        DBObject update = new BasicDBObject();
+        update.put("$mul", new BasicDBObject("match_count", 1.0F/2));
+
+        ngramsCollection.update(query, update, false, true);
+    }
 
 }
