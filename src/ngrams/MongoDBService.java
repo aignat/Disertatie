@@ -1,6 +1,7 @@
 package ngrams;
 
 import com.mongodb.*;
+import exception.CustomException;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -55,16 +56,25 @@ public class MongoDBService {
         DBCollection ngramsCollection = db.getCollection("total_counts");
     }
 
-    public void normalizeData() {
+    public void normalizeData() throws CustomException {
 
-        DBCollection ngramsCollection = db.getCollection("total_counts");
-        HashMap<Integer, Long> totalCountsMap = getTotalCounts();
+        DBCollection ngramsCollection = db.getCollection("z_1grams");
+        HashMap<Integer, Long> totalCountsMap = NGramUtils.readTotalCounts();
 
-        DBObject query = new BasicDBObject();
-        DBObject update = new BasicDBObject();
-        update.put("$mul", new BasicDBObject("match_count", 1.0F/2));
+        //update.put("$mul", new BasicDBObject("match_count", 1.0F/totalCountsMap.get("year")));
 
-        ngramsCollection.update(query, update, false, true);
+        DBCursor cursor = ngramsCollection.find();
+
+        while(cursor.hasNext()) {
+            DBObject object = cursor.next();
+            double matchCount = ((Number) (object.get("match_count"))).doubleValue();
+            int year = ((Integer) (object.get("year")));
+            object.put("match_count", matchCount * 1.0D / totalCountsMap.get(year));
+            ngramsCollection.save(object);
+        }
+
+        cursor.close();
+//        /ngramsCollection.update(query, update, false, true);
     }
 
     public void logarithmizeData() {

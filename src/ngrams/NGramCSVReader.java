@@ -15,6 +15,7 @@ import java.util.TreeMap;
  */
 public class NGramCSVReader {
 
+    //TODO: remove?
     public static HashMap<Integer, Long> readTotalCounts() throws CustomException {
 
         HashMap<Integer, Long> yearToBookTotalCounts = new HashMap<Integer, Long>();

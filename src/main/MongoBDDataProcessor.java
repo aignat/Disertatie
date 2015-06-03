@@ -1,6 +1,7 @@
 package main;
 
 import com.mongodb.MongoClient;
+import exception.CustomException;
 import ngrams.MongoDBService;
 
 import java.net.UnknownHostException;
@@ -21,6 +22,8 @@ public class MongoBDDataProcessor {
 
             mongoClient.close();
         } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (CustomException e) {
             e.printStackTrace();
         }
     }

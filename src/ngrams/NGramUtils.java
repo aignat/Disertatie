@@ -12,6 +12,35 @@ public class NGramUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NGramUtils.class);
 
+    public static HashMap<Integer, Long> readTotalCounts() throws CustomException {
+
+        HashMap<Integer, Long> yearToBookTotalCounts = new HashMap<Integer, Long>();
+        BufferedReader br = null;
+        String line;
+
+        try {
+            br = new BufferedReader(new FileReader(Constants.NGRAM_ENGLISH_TOTALCOUNTS_FILE));
+            while ((line = br.readLine()) != null) {
+                String[] tokens = line.split(",");
+                yearToBookTotalCounts.put(Integer.parseInt(tokens[0]), Long.parseLong(tokens[1]));
+            }
+        } catch (FileNotFoundException e) {
+            throw new CustomException("Constants.NGRAM_ENGLISH_TOTALCOUNTS_FILE not found", Thread.currentThread().getStackTrace()[1].getMethodName());
+        } catch (IOException e) {
+            throw new CustomException("Error reading from CSV file", Thread.currentThread().getStackTrace()[1].getMethodName());
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    throw new CustomException("Error closing Constants.NGRAM_ENGLISH_TOTALCOUNTS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
+                }
+            }
+        }
+
+        return yearToBookTotalCounts;
+    }
+
     public static ArrayList<Integer> getIntersectionYears(TreeMap<Integer, Float> data1, TreeMap<Integer, Float> data2) {
         ArrayList<Integer> intersectionYears = new ArrayList<Integer>();
 
