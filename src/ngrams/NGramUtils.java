@@ -12,6 +12,15 @@ public class NGramUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NGramUtils.class);
 
+    private static HashMap<Integer, Long> totalCounts;
+
+    public static HashMap<Integer, Long> getTotalCounts() throws CustomException {
+        if (totalCounts == null) {
+            totalCounts = readTotalCounts();
+        }
+        return totalCounts;
+    }
+
     public static HashMap<Integer, Long> readTotalCounts() throws CustomException {
 
         HashMap<Integer, Long> yearToBookTotalCounts = new HashMap<Integer, Long>();
@@ -41,36 +50,28 @@ public class NGramUtils {
         return yearToBookTotalCounts;
     }
 
-    public static ArrayList<Integer> getIntersectionYears(TreeMap<Integer, Float> data1, TreeMap<Integer, Float> data2) {
-        ArrayList<Integer> intersectionYears = new ArrayList<Integer>();
+    public static List<Integer> getIntersectionYears(List<Float> data1, List<Float> data2) {
 
-        Iterator<Map.Entry<Integer, Float>> iterator1 = data1.entrySet().iterator();
-        Iterator<Map.Entry<Integer, Float>> iterator2 = data2.entrySet().iterator();
+        List<Integer> intersectionYears = new ArrayList<Integer>();
 
-        float previousValue1 = iterator1.next().getValue();
-        float previousValue2 = iterator2.next().getValue();
+        for (int i = 1; i < data1.size() - 1; i++) {
 
-        while (iterator1.hasNext() && iterator2.hasNext()) {
+            float previousValue1 = data1.get(i-1);
+            float previousValue2 = data2.get(i-1);
+            float actualValue1 = data1.get(i);
+            float actualValue2 = data2.get(i);
 
-            Map.Entry<Integer, Float> entry1 = iterator1.next();
-            int actualKey = entry1.getKey();
-            float actualValue1 = entry1.getValue();
-            float actualValue2 = iterator2.next().getValue();
-
-            if ((previousValue1 - previousValue2) * (actualValue1 - actualValue2) <= 0) {       // check the intersection
+            if ((previousValue1 - previousValue2) * (actualValue1 - actualValue2) < 0) {       // check the intersection
                 if ((previousValue1 - actualValue1) * (previousValue2 - actualValue2) <= 0) {   // check tendencies to be in opposition
-                    intersectionYears.add(actualKey);
+                    intersectionYears.add(Constants.NGRAM_START_YEAR + i);
                 }
             }
-
-            previousValue1 = actualValue1;
-            previousValue2 = actualValue2;
         }
 
         return intersectionYears;
     }
 
-    public static void writeIntersectionForAllWordsToFile() throws CustomException {
+    public static void writeIntersectionForAllWordsToFile(MongoDBService mongoDBService) throws CustomException {
 
         String line;
         BufferedReader br = null;
@@ -79,22 +80,49 @@ public class NGramUtils {
         try {
             br = new BufferedReader(new FileReader(Constants.WORDNET_WORDS_SYNONYMS_FILE));
             bw = new BufferedWriter(new FileWriter(Constants.WORDNET_WORDS_INTERSECTIONS));
+            Set<String> pairSet = new HashSet<String>();
 
             while ((line = br.readLine()) != null) {
 
-                String[] synonyms = line.split(":");
+                String[] synonyms = line.split(":|,");
                 LOGGER.info(synonyms[0]);
-                TreeMap<Integer, Float> wordData = NGramCSVReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, synonyms[0], false);
+
+                List<Float> wordData;
+
+                try {
+                    wordData = NGramUtils.smoothData(NGramUtils.normalizeData(mongoDBService.getNGram(synonyms[0])));
+                } catch (CustomException e) {
+                    continue;
+                }
 
                 for (int i = 1; i < synonyms.length; i++) {
-                    TreeMap<Integer, Float> synonymData = NGramCSVReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, synonyms[i], false);
-                    ArrayList<Integer> intersections = getIntersectionYears(wordData, synonymData);
 
-                    bw.write(synonyms[0] + " " + synonyms[i]);
-                    for (int intersection : intersections) {
-                        bw.write(intersection);
+                    if (synonyms[i].equals(synonyms[0])) {
+                        continue;
                     }
-                    bw.newLine();
+
+                    if (pairSet.contains(synonyms[i] + "+" + synonyms[0])) {
+                        continue;
+                    } else {
+                        pairSet.add(synonyms[0] + "+" + synonyms[i]);
+                    }
+
+                    List<Float> synonymData;
+                    try {
+                        synonymData = NGramUtils.smoothData(NGramUtils.normalizeData(mongoDBService.getNGram(synonyms[i])));
+                    } catch (CustomException e) {
+                        continue;
+                    }
+
+                    List<Integer> intersections = getIntersectionYears(wordData, synonymData);
+
+                    if (intersections.size() > 0) {
+                        bw.write(synonyms[0] + "," + synonyms[i] + ":");
+                        for (int intersection : intersections) {
+                            bw.write(String.valueOf(intersection) + ",");
+                        }
+                        bw.newLine();
+                    }
                 }
             }
         } catch (FileNotFoundException e) {
@@ -119,131 +147,112 @@ public class NGramUtils {
         }
     }
 
-    public static ArrayList<Integer> getPeakYears(TreeMap<Integer, Float> data) {
-
-        int peakRange = Constants.NGRAM_PEAK_RANGE;
-        ArrayList<Integer> peakYearsList = new ArrayList<Integer>();
-        ArrayList<Integer> years = new ArrayList<Integer>();
-        ArrayList<Float> frequencies = new ArrayList<Float>();
-
-        for (Map.Entry<Integer, Float> entry : data.entrySet()) {
-            years.add(entry.getKey());
-            frequencies.add(entry.getValue());
-        }
-
-        outerloop:
-        for (int i = peakRange; i < years.size() - peakRange; i++) {
-            float value = frequencies.get(i);
-
-            for (int j = 1; j < peakRange; j++) {
-                if (frequencies.get(i - j) > value || frequencies.get(i + j) > value) {
-                    continue outerloop;
-                }
-            }
-
-            peakYearsList.add(years.get(i));
-            i+= peakRange - 1;
-        }
-
-        return peakYearsList;
-    }
-
-    public static ArrayList<Integer> getPeakYears2(TreeMap<Integer, Float> data) {
-
-        ArrayList<Integer> peakYearsList = new ArrayList<Integer>();
-        ArrayList<Integer> years = new ArrayList<Integer>();
-        ArrayList<Float> frequencies = new ArrayList<Float>();
-
-        int peakRange = 10;
-        float beforeInclination = 90.0F / 100;
-        float afterInclination = 90.0F / 100;
-
-        for (Map.Entry<Integer, Float> entry : data.entrySet()) {
-            years.add(entry.getKey());
-            frequencies.add(entry.getValue());
-        }
-
-        for (int i = peakRange; i < years.size() - peakRange; i++) {
-            float value = frequencies.get(i);
-
-            //if this is a peak
-            if ((value > frequencies.get(i - 1)) && (value > frequencies.get(i + 1))) {
-                //if the frequencies of i-10 and i+10 are lower than 90% of current frequency
-                if ((beforeInclination * value > frequencies.get(i - peakRange)) && (afterInclination * value > frequencies.get(i + peakRange))) {
-                    //if the frequencies of i-5 and i+5 are lower than 90% of current frequency
-                    if ((beforeInclination * value > frequencies.get(i - peakRange / 2)) && (afterInclination * value > frequencies.get(i + peakRange / 2))) {
-                        peakYearsList.add(years.get(i));
-                    }
-                }
-            }
-        }
-
-        return peakYearsList;
-    }
-
     public static void writePeaksForAllWordNetWordsToFile() throws CustomException {
 
-        List<Integer> years = new ArrayList<Integer>();
-        List<String> words = new ArrayList<String>();
-        BufferedReader br = null;
-        String line;
+//        List<Integer> years = new ArrayList<Integer>();
+//        List<String> words = new ArrayList<String>();
+//        BufferedReader br = null;
+//        String line;
+//
+//        for (int i = Constants.NGRAM_STARTING_YEAR; i <= Constants.NGRAM_END_YEAR; i++) {
+//            years.add(i);
+//            words.add("");
+//        }
+//
+//        try {
+//            br = new BufferedReader(new FileReader(Constants.WORDNET_WORDS_SYNONYMS_FILE));
+//            while ((line = br.readLine()) != null) {
+//
+//                String word = line.split(":")[0];
+//                LOGGER.info(word);
+//
+//                try {
+//                    TreeMap<Integer, Float> data = NGramCSVReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, word, false);
+//
+//                    for (int i : NGramUtils.getPeakYears2(data)) {
+//                        String newWord = words.get(i - Constants.NGRAM_STARTING_YEAR) + word + ",";
+//                        words.set(i - Constants.NGRAM_STARTING_YEAR, newWord);
+//                    }
+//                } catch(CustomException e) {
+//                    //do nothing, no peaks for the word
+//                }
+//            }
+//        } catch (FileNotFoundException e) {
+//            throw new CustomException("Constants.WORDNET_WORDS_SYNONYMS_FILE not found", Thread.currentThread().getStackTrace()[1].getMethodName());
+//        } catch (IOException ex) {
+//            throw new CustomException("Error reading Constants.WORDNET_WORDS_SYNONYMS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
+//        } finally {
+//            if (br != null) {
+//                try {
+//                    br.close();
+//                } catch (IOException ex) {
+//                    throw new CustomException("Error closing Constants.WORDNET_WORDS_SYNONYMS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
+//                }
+//            }
+//        }
+//
+//        BufferedWriter bw = null;
+//        try {
+//            bw = new BufferedWriter(new FileWriter(Constants.WORDNET_WORDS_PEAKYEARS_FILE));
+//            for (int i = 0; i < years.size(); i++) {
+//                bw.write(years.get(i) + ":" + words.get(i));
+//                bw.newLine();
+//            }
+//        } catch (IOException ex) {
+//            throw new CustomException("Error writing to Constants.WORDNET_WORDS_PEAKYEARS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
+//        } finally {
+//            if (bw != null) {
+//                try {
+//                    bw.close();
+//                } catch (IOException e) {
+//                    throw new CustomException("Error closing to Constants.WORDNET_WORDS_PEAKYEARS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
+//                }
+//            }
+//        }
 
-        for (int i = Constants.NGRAM_STARTING_YEAR; i <= Constants.NGRAM_END_YEAR; i++) {
-            years.add(i);
-            words.add("");
+    }
+
+    public static List<Float> normalizeData(List<Float> data) throws CustomException {
+
+        List<Float> normalizedData = new ArrayList<Float>(Constants.NGRAM_END_YEAR - Constants.NGRAM_START_YEAR + 1);
+
+        HashMap<Integer, Long> totalCountsMap = getTotalCounts();
+
+        for (int i = 0; i < data.size(); i++) {
+            normalizedData.add(data.get(i) * 1.0F / totalCountsMap.get(i + Constants.NGRAM_START_YEAR));
         }
 
-        try {
-            br = new BufferedReader(new FileReader(Constants.WORDNET_WORDS_SYNONYMS_FILE));
-            while ((line = br.readLine()) != null) {
+        return normalizedData;
+    }
 
-                String word = line.split(":")[0];
-                LOGGER.info(word);
+    public static List<Float> smoothData(List<Float> data) {
 
-                try {
-                    TreeMap<Integer, Float> data = NGramCSVReader.readWordFromCSV(Constants.NGRAM_ENGLISH_CORPUS_NAME, word, false);
+        List<Float> smoothedData = new ArrayList<Float>(Constants.NGRAM_END_YEAR - Constants.NGRAM_START_YEAR + 1);
 
-                    for (int i : NGramUtils.getPeakYears2(data)) {
-                        String newWord = words.get(i - Constants.NGRAM_STARTING_YEAR) + word + ",";
-                        words.set(i - Constants.NGRAM_STARTING_YEAR, newWord);
-                    }
-                } catch(CustomException e) {
-                    //do nothing, no peaks for the word
-                }
+        for (int i = 0; i < data.size(); i++) {
+            float sum = 0;
+            int left = i - Constants.NGRAM_SMOOTHING >= 0 ? i - Constants.NGRAM_SMOOTHING : 0;
+            int right = i + Constants.NGRAM_SMOOTHING < data.size() ? i + Constants.NGRAM_SMOOTHING : data.size() - 1;
+
+            for (int j = left; j <= right; j++) {
+                sum += data.get(j);
             }
-        } catch (FileNotFoundException e) {
-            throw new CustomException("Constants.WORDNET_WORDS_SYNONYMS_FILE not found", Thread.currentThread().getStackTrace()[1].getMethodName());
-        } catch (IOException ex) {
-            throw new CustomException("Error reading Constants.WORDNET_WORDS_SYNONYMS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
-        } finally {
-            if (br != null) {
-                try {
-                    br.close();
-                } catch (IOException ex) {
-                    throw new CustomException("Error closing Constants.WORDNET_WORDS_SYNONYMS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
-                }
-            }
-        }
-        
-        BufferedWriter bw = null;
-        try {
-            bw = new BufferedWriter(new FileWriter(Constants.WORDNET_WORDS_PEAKYEARS_FILE));
-            for (int i = 0; i < years.size(); i++) {
-                bw.write(years.get(i) + ":" + words.get(i));
-                bw.newLine();
-            }
-        } catch (IOException ex) {
-            throw new CustomException("Error writing to Constants.WORDNET_WORDS_PEAKYEARS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
-        } finally {
-            if (bw != null) {
-                try {
-                    bw.close();
-                } catch (IOException e) {
-                    throw new CustomException("Error closing to Constants.WORDNET_WORDS_PEAKYEARS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
-                }
-            }
+            smoothedData.add(1.0F * sum / (right - left + 1));
         }
 
+        return smoothedData;
+    }
+
+    public TreeMap<Integer, Float> logarithmizeData(TreeMap<Integer, Float> data) {
+
+//        DBCollection ngramsCollection = db.getCollection("total_counts");
+
+//        DBObject query = new BasicDBObject();
+//        DBObject update = new BasicDBObject();
+//        update.put("$mul", new BasicDBObject("match_count", 1.0F/2));
+
+//        ngramsCollection.update(query, update, false, true);
+        return null;
     }
 
 }

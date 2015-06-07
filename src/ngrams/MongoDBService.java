@@ -2,11 +2,10 @@ package ngrams;
 
 import com.mongodb.*;
 import exception.CustomException;
+import utils.Constants;
 
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by aignat on 5/27/2015.
@@ -19,73 +18,30 @@ public class MongoDBService {
         db = mongoClient.getDB(database);
     }
 
-    public List<DBObject> getAllNGrams() {
+    public List<Float> getNGram(String ngram) throws CustomException {
 
-        DBCollection collection = db.getCollection("all_ngrams");
+        List<Float> data = new ArrayList<Float>(Collections.nCopies(Constants.NGRAM_END_YEAR - Constants.NGRAM_START_YEAR + 1, 0F));
 
-        return collection.find().toArray();
-    }
-
-    public List<DBObject> getNGram(String ngram) {
-
-        DBCollection collection = db.getCollection("e_1ngram");
+        DBCollection collection = db.getCollection("grams");
         BasicDBObject searchQuery = new BasicDBObject();
         searchQuery.put("ngram", ngram);
 
-        return collection.find(searchQuery).sort(new BasicDBObject("year", 1)).toArray();
-    }
+        DBCursor cursor = collection.find(searchQuery).sort(new BasicDBObject("year", 1));
 
-    public HashMap<Integer, Long> getTotalCounts() {
-
-        HashMap<Integer, Long> totalCountMap = new HashMap<Integer, Long>();
-
-        DBCollection collection = db.getCollection("total_counts");
-        DBCursor cursor = collection.find();
-
-        while (cursor.hasNext()) {
-            DBObject object = cursor.next();
-            totalCountMap.put((Integer) object.get("year"), ((Number) (object.get("match_count"))).longValue());
+        if (!cursor.hasNext()) {
+            throw new CustomException(ngram + " not found", Thread.currentThread().getStackTrace()[1].getMethodName());
         }
 
-        return totalCountMap;
-    }
-
-    public void filterData() {
-        String regex = "";
-
-        DBCollection ngramsCollection = db.getCollection("total_counts");
-    }
-
-    public void normalizeData() throws CustomException {
-
-        DBCollection ngramsCollection = db.getCollection("z_1grams");
-        HashMap<Integer, Long> totalCountsMap = NGramUtils.readTotalCounts();
-
-        //update.put("$mul", new BasicDBObject("match_count", 1.0F/totalCountsMap.get("year")));
-
-        DBCursor cursor = ngramsCollection.find();
-
-        while(cursor.hasNext()) {
-            DBObject object = cursor.next();
-            double matchCount = ((Number) (object.get("match_count"))).doubleValue();
-            int year = ((Integer) (object.get("year")));
-            object.put("match_count", matchCount * 1.0D / totalCountsMap.get(year));
-            ngramsCollection.save(object);
+        try {
+            while (cursor.hasNext()) {
+                DBObject object = cursor.next();
+                data.set((Integer) (object.get("year")) - Constants.NGRAM_START_YEAR, ((Number) (object.get("match_count"))).floatValue());
+            }
+        } finally {
+            cursor.close();
         }
 
-        cursor.close();
-//        /ngramsCollection.update(query, update, false, true);
-    }
-
-    public void logarithmizeData() {
-
-        DBCollection ngramsCollection = db.getCollection("total_counts");
-
-        DBObject query = new BasicDBObject();
-        DBObject update = new BasicDBObject();
-        update.put("$mul", new BasicDBObject("match_count", 1.0F/2));
-
-        ngramsCollection.update(query, update, false, true);
+        return data;
     }
 
 }
