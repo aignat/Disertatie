@@ -1,6 +1,7 @@
 package ngrams;
 
 import exception.CustomException;
+import math.MathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.Constants;
@@ -13,6 +14,7 @@ public class NGramUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(NGramUtils.class);
 
     private static HashMap<Integer, Long> totalCounts;
+    private static double log2 = Math.log(2);
 
     public static HashMap<Integer, Long> getTotalCounts() throws CustomException {
         if (totalCounts == null) {
@@ -147,6 +149,93 @@ public class NGramUtils {
         }
     }
 
+    public static List<Integer> getPeakYears(List<Float> data) {
+
+        int windowSize = 5;
+        float h = 1.5F;
+
+        List<Integer> peakYears = new ArrayList<Integer>();
+        List<Float> peakFuncValues = new ArrayList<Float>();
+        List<Float> peakFuncValues2 = new ArrayList<Float>(Collections.nCopies(data.size(), 0F));
+
+        for (int i = 0; i < data.size(); i++) {
+            peakFuncValues.add(S1(windowSize, i, data.get(i), data));
+        }
+
+        for (int i = 0; i < peakFuncValues.size(); i++) {
+            float localAverage = MathUtils.getLocalAverage(i, windowSize, peakFuncValues);
+            float localStandardDeviation = MathUtils.getLocalStandardDeviation(i, windowSize, peakFuncValues);
+
+            if ((peakFuncValues.get(i) > 0) && ((peakFuncValues.get(i) - localAverage) > h * localStandardDeviation)) {
+                if (checkIfMax(i, peakFuncValues)) {
+                    peakFuncValues2.set(i, peakFuncValues.get(i));
+                }
+            }
+        }
+
+
+        for (int i = 0; i < ; i++) {
+            
+        }
+
+
+        /*
+
+     for key1, key2 in zip(data_set.keys()[:-1], data_set.keys()[1:]):
+		if key1 in output and key2 in output:
+			if abs(output.keys().index(key2) - output.keys().index(key1)) <= window_size:
+				if output[key1] < output[key2]:
+					del output[key1]
+				else:
+					del output[key2]
+
+        */
+
+        return peakYearsList;
+    }
+
+    private static float S1(int windowSize, int currentIndex, float currentValue, List<Float> data) {
+        List<Float> left = new ArrayList<Float>();
+        List<Float> right = new ArrayList<Float>();
+        left.add(0F);
+        right.add(0F);
+
+        for (int i = 1; i <= windowSize; i++) {
+            if(currentIndex - i > 0) {
+                if (data.get(currentIndex - i) <= data.get(currentIndex - i + 1)) {
+                    left.add(currentValue - data.get(i));
+                } else {
+                    break;
+                }
+            }
+        }
+
+        for (int i = 1; i <= windowSize; i++) {
+            if(currentIndex + i < data.size()) {
+                if (data.get(currentIndex + i) >= data.get(currentIndex + i - 1)) {
+                    right.add(currentValue - data.get(i));
+                } else {
+                    break;
+                }
+            }
+        }
+
+        return ((Collections.max(left) + Collections.max(right)) / 2);
+    }
+
+    private static boolean checkIfMax(int currentIndex, List<Float> data) {
+
+        if (currentIndex > 1 && data.get(currentIndex) < data.get(currentIndex - 1)) {
+            return false;
+        }
+
+        if (currentIndex < data.size() - 1 && data.get(currentIndex) < data.get(currentIndex + 1)) {
+            return false;
+        }
+
+        return true;
+    }
+
     public static void writePeaksForAllWordNetWordsToFile() throws CustomException {
 
 //        List<Integer> years = new ArrayList<Integer>();
@@ -243,16 +332,15 @@ public class NGramUtils {
         return smoothedData;
     }
 
-    public TreeMap<Integer, Float> logarithmizeData(TreeMap<Integer, Float> data) {
+    public List<Float> logarithmizeData(List<Float> data) {
 
-//        DBCollection ngramsCollection = db.getCollection("total_counts");
+        List<Float> logarithmedData = new ArrayList<Float>();
 
-//        DBObject query = new BasicDBObject();
-//        DBObject update = new BasicDBObject();
-//        update.put("$mul", new BasicDBObject("match_count", 1.0F/2));
+        for (int i = 0; i < data.size(); i++) {
+            logarithmedData.add((float)(Math.log(data.get(i) / log2)));
+        }
 
-//        ngramsCollection.update(query, update, false, true);
-        return null;
+        return logarithmedData;
     }
 
 }

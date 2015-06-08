@@ -4,7 +4,6 @@ import com.mongodb.*;
 import exception.CustomException;
 import utils.Constants;
 
-import java.net.UnknownHostException;
 import java.util.*;
 
 /**

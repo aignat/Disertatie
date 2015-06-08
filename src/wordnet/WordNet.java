@@ -62,7 +62,6 @@ public class WordNet {
         return synonymsSet;
     }
 
-    
     public static void writeAllWordsWithSynonymsToFile() throws CustomException {
 
         BufferedWriter output = null;
