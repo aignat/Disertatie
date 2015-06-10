@@ -17,5 +17,6 @@ public class Constants {
     public static final int NGRAM_SMOOTHING = 2;
     public static final int NGRAM_START_YEAR = 1800;
     public static final int NGRAM_END_YEAR = 2008;
+    public static final String NGRAM_ALL_WORDS = "distinctEnglish1Grams.txt";
     public static final String NGRAM_ENGLISH_TOTALCOUNTS_FILE = "resources" + File.separator + "GoogleNgrams" + File.separator + "googlebooks-eng-all-totalcounts-20120701.txt";
 }

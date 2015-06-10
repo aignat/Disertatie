@@ -168,7 +168,6 @@ public class NGramUtils {
         for (int i = 0; i < peakFuncValues.size(); i++) {
             double localAverage = MathUtils.getLocalAverage(i, windowSize, peakFuncValues);
             double localStandardDeviation = MathUtils.getLocalStandardDeviation(i, windowSize, peakFuncValues);
-            System.out.println(localStandardDeviation);
 
             if ((peakFuncValues.get(i) > 0) && (peakFuncValues.get(i) - localAverage > h * localStandardDeviation) && checkIfMax(i, data)) {
                 peakFuncValuesAux.set(i, peakFuncValues.get(i));
@@ -276,20 +275,19 @@ public class NGramUtils {
         }
 
         try {
-            br = new BufferedReader(new FileReader(Constants.WORDNET_WORDS_SYNONYMS_FILE));
+            br = new BufferedReader(new FileReader(Constants.NGRAM_ALL_WORDS));
             while ((line = br.readLine()) != null) {
 
-                String word = line.split(":")[0];
-                LOGGER.info(word);
+                LOGGER.info(line);
 
                 try {
-                    List<Double> datag = service.getNGram(word);
+                    List<Double> datag = service.getNGram(line);
                     List<Double> datan = normalizeData(datag);
-                    //List<Double> datas = smoothData(datan);
-                    List<Double> data = logarithmizeData(datag);
+                    List<Double> datas = smoothData(datan);
+                    List<Double> data = logarithmizeData(datas);
 
                     for (int year : getPeakYears(data)) {
-                        String newWord = words.get(year - Constants.NGRAM_START_YEAR) + word + ",";
+                        String newWord = words.get(year - Constants.NGRAM_START_YEAR) + line + ",";
                         words.set(year - Constants.NGRAM_START_YEAR, newWord);
                     }
                 } catch(CustomException e) {
