@@ -1,11 +1,13 @@
 package main;
 
-import math.MathUtils;
+import com.mongodb.MongoClient;
+import exception.CustomException;
+import ngrams.MongoDBService;
+import ngrams.NGramUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.net.UnknownHostException;
 
 /**
  * Created by aignat on 5/14/2015.
@@ -17,22 +19,17 @@ public class PeaksFinder {
     public static void main(String[] args) {
 
         //write peak years for all WordNet words to Constants.WORDNET_WORDS_PEAKYEARS_FILE
-//        try {
-//            NGramUtils.writePeaksForAllWordNetWordsToFile();
-//        } catch (CustomException e) {
-//            LOGGER.error(e.getMessage() + ":" + e.getOriginatingMethodName());
-//        }
+        try {
+            MongoClient mongoClient = new MongoClient("localhost", 27017);
+            MongoDBService mongoDBService = new MongoDBService(mongoClient, "test");
 
-        List<Float> data = new ArrayList<Float>();
-        data.add(2F);
-        data.add(4F);
-        data.add(4F);
-        data.add(4F);
-        data.add(5F);
-        data.add(5F);
-        data.add(7F);
-        data.add(9F);
-        System.out.println(MathUtils.getStandardDeviation(data));
+            NGramUtils.writePeaksForAllWordNetWordsToFile(mongoDBService);
+        } catch (CustomException e) {
+            LOGGER.error(e.getMessage() + ":" + e.getOriginatingMethodName());
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
 
         System.out.println("Done finding peaks");
     }

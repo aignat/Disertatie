@@ -17,9 +17,9 @@ public class MongoDBService {
         db = mongoClient.getDB(database);
     }
 
-    public List<Float> getNGram(String ngram) throws CustomException {
+    public List<Double> getNGram(String ngram) throws CustomException {
 
-        List<Float> data = new ArrayList<Float>(Collections.nCopies(Constants.NGRAM_END_YEAR - Constants.NGRAM_START_YEAR + 1, 0F));
+        List<Double> data = new ArrayList<Double>(Collections.nCopies(Constants.NGRAM_END_YEAR - Constants.NGRAM_START_YEAR + 1, 0.0));
 
         DBCollection collection = db.getCollection("grams");
         BasicDBObject searchQuery = new BasicDBObject();
@@ -34,7 +34,7 @@ public class MongoDBService {
         try {
             while (cursor.hasNext()) {
                 DBObject object = cursor.next();
-                data.set((Integer) (object.get("year")) - Constants.NGRAM_START_YEAR, ((Number) (object.get("match_count"))).floatValue());
+                data.set((Integer) (object.get("year")) - Constants.NGRAM_START_YEAR, ((Number) (object.get("match_count"))).doubleValue());
             }
         } finally {
             cursor.close();

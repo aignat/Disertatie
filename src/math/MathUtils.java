@@ -8,19 +8,19 @@ import java.util.List;
  */
 public class MathUtils {
 
-    public static double getAverage(List<Float> data) {
+    public static double getAverage(List<Double> data) {
 
         double sum = 0;
 
-        for (Float element : data) {
+        for (Double element : data) {
             sum += element;
         }
 
         return sum / data.size();
     }
 
-    private static List<Float> getLocalData(int currentIndex, int windowSize, List<Float> data) {
-        List<Float> localData = new ArrayList<Float>();
+    private static List<Double> getLocalData(int currentIndex, int windowSize, List<Double> data) {
+        List<Double> localData = new ArrayList<Double>();
         localData.add(data.get(currentIndex));
 
         for (int i = 1; i < windowSize; i++) {
@@ -35,26 +35,26 @@ public class MathUtils {
         return localData;
     }
 
-    public static float getLocalAverage(int currentIndex, int windowSize, List<Float> data) {
+    public static double getLocalAverage(int currentIndex, int windowSize, List<Double> data) {
 
-        return (float)getAverage(getLocalData(currentIndex, windowSize, data));
+        return getAverage(getLocalData(currentIndex, windowSize, data));
     }
 
-    public static double getStandardDeviation(List<Float> data) {
+    public static double getStandardDeviation(List<Double> data) {
 
         double sum = 0;
         double average = getAverage(data);
 
-        for (Float element : data) {
+        for (Double element : data) {
             sum += Math.pow((element - average), 2);
         }
 
-        return sum / data.size();
+        return Math.sqrt(sum / data.size());
     }
 
-    public static float getLocalStandardDeviation(int currentIndex, int windowSize, List<Float> data) {
+    public static double getLocalStandardDeviation(int currentIndex, int windowSize, List<Double> data) {
 
-        return (float)getStandardDeviation(getLocalData(currentIndex, windowSize, data));
+        return getStandardDeviation(getLocalData(currentIndex, windowSize, data));
     }
 
 }
