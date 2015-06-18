@@ -8,17 +8,6 @@ import java.util.List;
  */
 public class MathUtils {
 
-    public static double getAverage(List<Double> data) {
-
-        double sum = 0;
-
-        for (Double element : data) {
-            sum += element;
-        }
-
-        return sum / data.size();
-    }
-
     private static List<Double> getLocalData(int currentIndex, int windowSize, List<Double> data) {
         List<Double> localData = new ArrayList<Double>();
         localData.add(data.get(currentIndex));
@@ -35,12 +24,23 @@ public class MathUtils {
         return localData;
     }
 
+    private static double getAverage(List<Double> data) {
+
+        double sum = 0;
+
+        for (Double element : data) {
+            sum += element;
+        }
+
+        return sum / data.size();
+    }
+
     public static double getLocalAverage(int currentIndex, int windowSize, List<Double> data) {
 
         return getAverage(getLocalData(currentIndex, windowSize, data));
     }
 
-    public static double getStandardDeviation(List<Double> data) {
+    private static double getStandardDeviation(List<Double> data) {
 
         double sum = 0;
         double average = getAverage(data);

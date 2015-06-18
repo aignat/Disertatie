@@ -1,32 +1,32 @@
 package ngrams;
 
+import com.mongodb.DB;
 import exception.CustomException;
 import math.MathUtils;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import mongo.MongoDBService;
 import utils.Constants;
 
-import java.io.*;
-import java.util.*;
-
-import static org.junit.Assert.assertEquals;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 
 public class NGramUtils {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(NGramUtils.class);
-
     private static HashMap<Integer, Long> totalCounts;
-    private static double log2 = Math.log(2);
 
-    public static HashMap<Integer, Long> getTotalCounts() throws CustomException {
+    private static HashMap<Integer, Long> getTotalCounts() throws CustomException {
         if (totalCounts == null) {
             totalCounts = readTotalCounts();
         }
         return totalCounts;
     }
 
-    public static HashMap<Integer, Long> readTotalCounts() throws CustomException {
+    private static HashMap<Integer, Long> readTotalCounts() throws CustomException {
 
         HashMap<Integer, Long> yearToBookTotalCounts = new HashMap<Integer, Long>();
         BufferedReader br = null;
@@ -76,86 +76,10 @@ public class NGramUtils {
         return intersectionYears;
     }
 
-    public static void writeIntersectionForAllWordsToFile(MongoDBService mongoDBService) throws CustomException {
-
-        String line;
-        BufferedReader br = null;
-        BufferedWriter bw = null;
-
-        try {
-            br = new BufferedReader(new FileReader(Constants.WORDNET_WORDS_SYNONYMS_FILE));
-            bw = new BufferedWriter(new FileWriter(Constants.WORDNET_WORDS_INTERSECTIONS));
-            Set<String> pairSet = new HashSet<String>();
-
-            while ((line = br.readLine()) != null) {
-
-                String[] synonyms = line.split(":|,");
-                LOGGER.info(synonyms[0]);
-
-                List<Double> wordData;
-
-                try {
-                    wordData = NGramUtils.smoothData(NGramUtils.normalizeData(mongoDBService.getNGram(synonyms[0])));
-                } catch (CustomException e) {
-                    continue;
-                }
-
-                for (int i = 1; i < synonyms.length; i++) {
-
-                    if (synonyms[i].equals(synonyms[0])) {
-                        continue;
-                    }
-
-                    if (pairSet.contains(synonyms[i] + "+" + synonyms[0])) {
-                        continue;
-                    } else {
-                        pairSet.add(synonyms[0] + "+" + synonyms[i]);
-                    }
-
-                    List<Double> synonymData;
-                    try {
-                        synonymData = NGramUtils.smoothData(NGramUtils.normalizeData(mongoDBService.getNGram(synonyms[i])));
-                    } catch (CustomException e) {
-                        continue;
-                    }
-
-                    List<Integer> intersections = getIntersectionYears(wordData, synonymData);
-
-                    if (intersections.size() > 0) {
-                        bw.write(synonyms[0] + "," + synonyms[i] + ":");
-                        for (int intersection : intersections) {
-                            bw.write(String.valueOf(intersection) + ",");
-                        }
-                        bw.newLine();
-                    }
-                }
-            }
-        } catch (FileNotFoundException e) {
-            throw new CustomException("Constants.WORDNET_WORDS_SYNONYMS_FILE not found", Thread.currentThread().getStackTrace()[1].getMethodName());
-        } catch (IOException e) {
-            throw new CustomException("Error reading Constants.WORDNET_WORDS_SYNONYMS_FILE or writing to Constants.WORDNET_WORDS_INTERSECTIONS", Thread.currentThread().getStackTrace()[1].getMethodName());
-        } finally {
-            if (br != null) {
-                try {
-                    br.close();
-                } catch (IOException ex) {
-                    throw new CustomException("Error closing Constants.WORDNET_WORDS_SYNONYMS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
-                }
-            }
-            if (bw != null) {
-                try {
-                    bw.close();
-                } catch (IOException ex) {
-                    throw new CustomException("Error closing Constants.WORDNET_WORDS_INTERSECTIONS", Thread.currentThread().getStackTrace()[1].getMethodName());
-                }
-            }
-        }
-    }
-
     public static List<Integer> getPeakYears(List<Double> data) {
 
         int windowSize = 5;
-        double h = 1.5;
+        double h = 1.8;
 
         List<Integer> peakYearsList = new ArrayList<Integer>();
         List<Double> peakFuncValues = new ArrayList<Double>();
@@ -174,15 +98,16 @@ public class NGramUtils {
             }
         }
 
-        for (int i = 0; i < peakFuncValuesAux.size(); i++) {
-            for (int j = 1; j < windowSize; j++) {
-                if (peakFuncValuesAux.get(i) < peakFuncValuesAux.get(j)) {
-                    peakFuncValuesAux.set(i, 0.0);
-                } else {
-                    peakFuncValuesAux.set(j, 0.0);
-                }
-            }
-        }
+//        for (int i = windowSize; i < peakFuncValuesAux.size() - windowSize; i++) {
+//            for (int j = 1; j < windowSize; j++) {
+//                if (peakFuncValuesAux.get(i - j) < peakFuncValuesAux.get(i)) {
+//                    peakFuncValuesAux.set(i - j, 0.0);
+//                }
+//                if (peakFuncValuesAux.get(i + j) < peakFuncValuesAux.get(i)) {
+//                    peakFuncValuesAux.set(i + j, 0.0);
+//                }
+//            }
+//        }
 
         for (int i = 0; i < peakFuncValuesAux.size(); i++) {
             if (peakFuncValuesAux.get(i) > 0) {
@@ -193,29 +118,10 @@ public class NGramUtils {
         return peakYearsList;
     }
 
-    @Test
-    public void testGetPeakYears() {
-        List<Double> list = new ArrayList<Double>();
-        list.add(44.0); list.add(56.0); list.add(6.0); list.add(45.0); list.add(2.0); list.add(66.0); list.add(7.0);
-
-        assertEquals(getPeakYears(list), Arrays.asList(1805));
-
-    }
-
     private static boolean checkIfMax(int currIndex, List<Double> peak_func_values) {
 
         return (!(((currIndex > 0) && (peak_func_values.get(currIndex) < peak_func_values.get(currIndex - 1))) ||
                 ((currIndex < peak_func_values.size() - 1) && (peak_func_values.get(currIndex) < peak_func_values.get(currIndex + 1)))));
-    }
-
-    @Test
-    public void testCheckIfMax() {
-        List<Double> list = new ArrayList<Double>();
-        list.add(4.0); list.add(56.0); list.add(6.0); list.add(45.0);
-        assertEquals(checkIfMax(0,list), false);
-        assertEquals(checkIfMax(1,list), true);
-        assertEquals(checkIfMax(2,list), false);
-        assertEquals(checkIfMax(3,list), true);
     }
 
     private static double S1(int window_size, int current_index, List<Double> data_set) {
@@ -246,87 +152,6 @@ public class NGramUtils {
         }
 
         return (Collections.max(left) + Collections.max(right)) / 2;
-    }
-
-    @Test
-    public void testS1() {
-        List<Double> list = new ArrayList<Double>();
-        list.add(44.0); list.add(56.0); list.add(6.0); list.add(45.0); list.add(2.0); list.add(66.0); list.add(7.0);
-
-        assertEquals(S1(0, 0, list), 0F);
-        assertEquals(S1(1, 1, list), 0F);
-        assertEquals(S1(2, 2, list), 0F);
-        assertEquals(S1(3, 3, list), 19.5F);
-        assertEquals(S1(4, 4, list), 0F);
-        assertEquals(S1(5, 5, list), 32F);
-        assertEquals(S1(6, 6, list), 0F);
-    }
-
-    public static void writePeaksForAllWordNetWordsToFile(MongoDBService service) throws CustomException {
-
-        List<Integer> years = new ArrayList<Integer>();
-        List<String> words = new ArrayList<String>();
-        BufferedReader br = null;
-        String line;
-
-        for (int i = Constants.NGRAM_START_YEAR; i <= Constants.NGRAM_END_YEAR; i++) {
-            years.add(i);
-            words.add("");
-        }
-
-        try {
-            br = new BufferedReader(new FileReader(Constants.NGRAM_ALL_WORDS));
-            while ((line = br.readLine()) != null) {
-
-                LOGGER.info(line);
-
-                try {
-                    List<Double> datag = service.getNGram(line);
-                    List<Double> datan = normalizeData(datag);
-                    List<Double> datas = smoothData(datan);
-                    List<Double> data = logarithmizeData(datas);
-
-                    for (int year : getPeakYears(data)) {
-                        String newWord = words.get(year - Constants.NGRAM_START_YEAR) + line + ",";
-                        words.set(year - Constants.NGRAM_START_YEAR, newWord);
-                    }
-                } catch(CustomException e) {
-                    //do nothing, no peaks for the word
-                }
-            }
-        } catch (FileNotFoundException e) {
-            throw new CustomException("Constants.WORDNET_WORDS_SYNONYMS_FILE not found", Thread.currentThread().getStackTrace()[1].getMethodName());
-        } catch (IOException ex) {
-            throw new CustomException("Error reading Constants.WORDNET_WORDS_SYNONYMS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
-        } finally {
-            if (br != null) {
-                try {
-                    br.close();
-                } catch (IOException ex) {
-                    throw new CustomException("Error closing Constants.WORDNET_WORDS_SYNONYMS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
-                }
-            }
-        }
-
-        BufferedWriter bw = null;
-        try {
-            bw = new BufferedWriter(new FileWriter(Constants.WORDNET_WORDS_PEAKYEARS_FILE));
-            for (int i = 0; i < years.size(); i++) {
-                bw.write(years.get(i) + ":" + words.get(i));
-                bw.newLine();
-            }
-        } catch (IOException ex) {
-            throw new CustomException("Error writing to Constants.WORDNET_WORDS_PEAKYEARS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
-        } finally {
-            if (bw != null) {
-                try {
-                    bw.close();
-                } catch (IOException e) {
-                    throw new CustomException("Error closing to Constants.WORDNET_WORDS_PEAKYEARS_FILE", Thread.currentThread().getStackTrace()[1].getMethodName());
-                }
-            }
-        }
-
     }
 
     private static List<Double> normalizeData(List<Double> data) throws CustomException {
@@ -360,15 +185,7 @@ public class NGramUtils {
         return smoothedData;
     }
 
-    private static List<Double> logarithmizeData(List<Double> data) {
-
-        List<Double> logarithmicData = new ArrayList<Double>();
-
-        for (int i = 0; i < data.size(); i++) {
-            logarithmicData.add(Math.log(data.get(i) / log2));
-        }
-
-        return logarithmicData;
+    public static List<Double> getProcessedData(DB db, String word) throws CustomException {
+        return smoothData(normalizeData(MongoDBService.getNGram(db, word)));
     }
-
 }

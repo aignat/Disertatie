@@ -1,4 +1,4 @@
-package ngrams;
+package mongo;
 
 import com.mongodb.*;
 import exception.CustomException;
@@ -11,13 +11,7 @@ import java.util.*;
  */
 public class MongoDBService {
 
-    private DB db;
-
-    public MongoDBService(MongoClient mongoClient, String database) {
-        db = mongoClient.getDB(database);
-    }
-
-    public List<Double> getNGram(String ngram) throws CustomException {
+    public static List<Double> getNGram(DB db, String ngram) throws CustomException {
 
         List<Double> data = new ArrayList<Double>(Collections.nCopies(Constants.NGRAM_END_YEAR - Constants.NGRAM_START_YEAR + 1, 0.0));
 
