@@ -17,10 +17,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author aignat
@@ -43,6 +40,8 @@ public class Main {
 
             //initialize WordNetUtils
             WordNetUtils.initializeWordNet();
+
+            Map<String, Set<String>> results = new TreeMap<>();
 
             //process data
             for (Object pos : POS.getAllPOS()) {
@@ -76,7 +75,7 @@ public class Main {
                             }
 
                             for (String synonym : WordNetUtils.getSynonyms(indexWord)) {
-                                if (!synonym.matches("([a-zA-Z])*")) {
+                                if (!synonym.matches("([a-zA-Z])*") || synonym.equalsIgnoreCase(word)) {
                                     continue;
                                 }
 
@@ -84,9 +83,18 @@ public class Main {
                                 for (int year : NGramUtils.getIntersectionYears(dataWord, dataSynonym)) {
                                     for (int i = 1; i < 10 && year - Constants.NGRAM_START_YEAR - i >= 0; i++) {
                                         if (!wordToPeaksList.get(year - Constants.NGRAM_START_YEAR - i).equals("")) {
-                                            System.out.println(word + "," + synonym + "," + wordToPeaksList.get(year - Constants.NGRAM_START_YEAR - i) + "," + year + "," + (year - i));
-//                                            output.write(word + "," + synonym + "," + wordToPeaksList.get(year - Constants.NGRAM_START_YEAR - i) + "," + year + "," + (year - i));
-//                                            output.newLine();
+                                            String[] eventWords = wordToPeaksList.get(year - Constants.NGRAM_START_YEAR - i).split("/");
+                                            for (String eventWord : eventWords) {
+
+                                                String key = word.compareTo(synonym) < 0 ? word + "," + synonym : synonym + "," + word;
+                                                key +=  "," + eventWord;
+                                                Set<String> set = results.get(key);
+                                                if (set == null) {
+                                                    set = new HashSet<>();
+                                                }
+                                                set.add((year - i) + "->" + year);
+                                                results.put(key, set);
+                                            }
                                         }
                                     }
                                 }
@@ -97,6 +105,13 @@ public class Main {
                     }
                 } catch (JWNLException ex) {}
             }
+
+            //write results to output file
+            for (Map.Entry<String, Set<String>> entry : results.entrySet()) {
+                output.write(entry.getKey() + "   " + entry.getValue().toString());
+                output.newLine();
+            }
+
         } catch (CustomException e) {
             LOGGER.error(e.getMessage() + ":" + e.getOriginatingMethodName());
         } catch (UnknownHostException e) {
